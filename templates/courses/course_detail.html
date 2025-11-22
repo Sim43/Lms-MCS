@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.title }} - LMS{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Course Header -->
+            <div class="card mb-4">
+                {% if course.thumbnail %}
+                    <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}" style="max-height: 400px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    {% if course.category %}
+                        <span class="badge bg-primary mb-2">{{ course.category.name }}</span>
+                    {% endif %}
+                    <h1 class="card-title">{{ course.title }}</h1>
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-person-circle text-primary me-2"></i>
+                        <span><strong>Instructor:</strong> {{ course.instructor.username }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <i class="bi bi-calendar me-2"></i>
+                        <span class="text-muted">Created: {{ course.created_at|date:"F d, Y" }}</span>
+                    </div>
+                    <hr>
+                    <h5>Description</h5>
+                    <p class="card-text">{{ course.description|linebreaks }}</p>
+                </div>
+            </div>
+
+            <!-- Lessons -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-list-ul"></i> Course Lessons ({{ course.get_lessons_count }})</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% if course.lessons.all %}
+                        {% for lesson in course.lessons.all %}
+                            {% if is_enrolled or user == course.instructor %}
+                                <a href="{% url 'lessons:lesson_detail' lesson.pk %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ lesson.title }}</h6>
+                                            <small class="text-muted">
+                                                {% if lesson.video_url or lesson.video_file %}
+                                                    <i class="bi bi-play-circle"></i> Video
+                                                {% endif %}
+                                                {% if lesson.text_content %}
+                                                    <i class="bi bi-file-text ms-2"></i> Text
+                                                {% endif %}
+                                                {% if lesson.lesson_file %}
+                                                    <i class="bi bi-file-earmark ms-2"></i> File
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                        <i class="bi bi-chevron-right"></i>
+                                    </div>
+                                </a>
+                            {% else %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1 text-muted">{{ lesson.title }}</h6>
+                                            <small class="text-muted">Enroll to access this lesson</small>
+                                        </div>
+                                        <i class="bi bi-lock text-muted"></i>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item">
+                            <p class="text-muted mb-0">No lessons available yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    {% if user.is_authenticated %}
+                        {% if user == course.instructor %}
+                            <h5 class="mb-3">Instructor Actions</h5>
+                            <a href="{% url 'courses:course_edit' course.pk %}" class="btn btn-warning w-100 mb-2">
+                                <i class="bi bi-pencil"></i> Edit Course
+                            </a>
+                            <a href="{% url 'lessons:lesson_create' course.pk %}" class="btn btn-success w-100 mb-2">
+                                <i class="bi bi-plus-circle"></i> Add Lesson
+                            </a>
+                            <a href="{% url 'courses:course_delete' course.pk %}" class="btn btn-danger w-100 mb-2">
+                                <i class="bi bi-trash"></i> Delete Course
+                            </a>
+                        {% elif is_enrolled %}
+                            <h5 class="text-success mb-3">
+                                <i class="bi bi-check-circle"></i> Enrolled
+                            </h5>
+                            <a href="{% url 'dashboards:student_dashboard' %}" class="btn btn-primary w-100">
+                                <i class="bi bi-house"></i> Go to Dashboard
+                            </a>
+                            {% if course.lessons.all %}
+                                <a href="{% url 'lessons:lesson_detail' course.lessons.first.pk %}" class="btn btn-success w-100 mt-2">
+                                    <i class="bi bi-play-circle"></i> Start Learning
+                                </a>
+                            {% endif %}
+                        {% elif user.is_student %}
+                            <h5 class="mb-3">Enroll in this Course</h5>
+                            <p class="text-muted">Enrollment is free!</p>
+                            <a href="{% url 'enrollments:enroll' course.pk %}" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-plus-circle"></i> Enroll Now
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <h5 class="mb-3">Get Started</h5>
+                        <p class="text-muted">Login or register to enroll in this course for free!</p>
+                        <a href="{% url 'accounts:login' %}" class="btn btn-primary w-100 mb-2">
+                            <i class="bi bi-box-arrow-in-right"></i> Login
+                        </a>
+                        <a href="{% url 'accounts:register' %}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-person-plus"></i> Register
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Course Stats -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="bi bi-bar-chart"></i> Course Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong><i class="bi bi-people"></i> Enrollments:</strong>
+                        <span class="float-end">{{ course.get_enrollment_count }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong><i class="bi bi-list-ul"></i> Lessons:</strong>
+                        <span class="float-end">{{ course.get_lessons_count }}</span>
+                    </div>
+                    {% if course.category %}
+                        <div>
+                            <strong><i class="bi bi-folder"></i> Category:</strong>
+                            <span class="float-end">{{ course.category.name }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

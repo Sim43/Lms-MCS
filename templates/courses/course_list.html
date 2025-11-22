@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Courses - LMS{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="bi bi-book"></i> All Courses</h1>
+            <p class="text-muted">Discover and enroll in courses that interest you</p>
+        </div>
+        <div class="col-md-4">
+            <form method="get" class="mb-3">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="search" placeholder="Search courses..." value="{{ search_query }}">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar for Categories -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-grid"></i> Categories</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'courses:course_list' %}" class="list-group-item list-group-item-action {% if not selected_category %}active{% endif %}">
+                        All Categories
+                    </a>
+                    {% for category in categories %}
+                        <a href="{% url 'courses:course_list' %}?category={{ category.name }}" 
+                           class="list-group-item list-group-item-action {% if selected_category == category.name %}active{% endif %}">
+                            {{ category.name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Course List -->
+        <div class="col-md-9">
+            {% if courses %}
+                <div class="row g-4">
+                    {% for course in courses %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card course-card h-100">
+                                {% if course.thumbnail %}
+                                    <img src="{{ course.thumbnail.url }}" class="card-img-top course-thumbnail" alt="{{ course.title }}">
+                                {% else %}
+                                    <div class="card-img-top course-thumbnail bg-secondary d-flex align-items-center justify-content-center">
+                                        <i class="bi bi-book text-white" style="font-size: 4rem;"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="card-body d-flex flex-column">
+                                    {% if course.category %}
+                                        <span class="badge bg-primary mb-2">{{ course.category.name }}</span>
+                                    {% endif %}
+                                    <h5 class="card-title">{{ course.title }}</h5>
+                                    <p class="card-text text-muted flex-grow-1">{{ course.description|truncatewords:20 }}</p>
+                                    <div class="mt-auto">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <small class="text-muted">
+                                                <i class="bi bi-person"></i> {{ course.instructor.username }}
+                                            </small>
+                                            <small class="text-muted">
+                                                <i class="bi bi-people"></i> {{ course.get_enrollment_count }} enrolled
+                                            </small>
+                                        </div>
+                                        <a href="{% url 'courses:course_detail' course.pk %}" class="btn btn-primary w-100">
+                                            View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No courses found. 
+                    {% if search_query %}Try a different search term.{% else %}Check back soon!{% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
