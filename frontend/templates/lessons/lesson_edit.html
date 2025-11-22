@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Lesson - LMS{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('courses:home') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=lesson.course.id) }}">{{ lesson.course.title }}</a></li>
+                    <li class="breadcrumb-item active">Edit Lesson</li>
+                </ol>
+            </nav>
+
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="bi bi-pencil"></i> Edit Lesson: {{ lesson.title }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Lesson Title <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ lesson.title }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="order" class="form-label">Order</label>
+                            <input type="number" class="form-control" id="order" name="order" value="{{ lesson.order }}" min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="video_url" class="form-label">Video URL</label>
+                            <input type="url" class="form-control" id="video_url" name="video_url" value="{{ lesson.video_url|default:'' }}" placeholder="https://youtube.com/watch?v=...">
+                            {% if lesson.video_file %}
+                                <small class="text-muted">Currently using uploaded file. Leave URL empty to keep file.</small>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="video_file" class="form-label">OR Upload New Video File</label>
+                            {% if lesson.video_file %}
+                                <div class="mb-2">
+                                    <small class="text-muted">Current file: {{ lesson.video_file.name }}</small>
+                                </div>
+                            {% endif %}
+                            <input type="file" class="form-control" id="video_file" name="video_file" accept="video/*">
+                            <small class="text-muted">Leave empty to keep current file</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="text_content" class="form-label">Text Content</label>
+                            <textarea class="form-control" id="text_content" name="text_content" rows="10">{{ lesson.text_content }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="lesson_file" class="form-label">Additional File</label>
+                            {% if lesson.lesson_file %}
+                                <div class="mb-2">
+                                    <small class="text-muted">Current file: {{ lesson.lesson_file.name }}</small>
+                                </div>
+                            {% endif %}
+                            <input type="file" class="form-control" id="lesson_file" name="lesson_file" accept=".pdf,.doc,.docx,.txt">
+                            <small class="text-muted">Leave empty to keep current file</small>
+                        </div>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('lesson_detail', lesson_id=lesson.id) }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Update Lesson
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

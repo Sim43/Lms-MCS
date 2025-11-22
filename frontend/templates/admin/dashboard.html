@@ -1,0 +1,148 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Admin Dashboard - LMS{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h1 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</h1>
+    <p class="text-muted mb-0">Welcome back, {{ current_user.username }}!</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_users }}</div>
+            <div class="stat-label">
+                <i class="bi bi-people me-2"></i>Total Users
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_courses }}</div>
+            <div class="stat-label">
+                <i class="bi bi-book me-2"></i>Total Courses
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_lessons }}</div>
+            <div class="stat-label">
+                <i class="bi bi-file-text me-2"></i>Total Lessons
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_enrollments }}</div>
+            <div class="stat-label">
+                <i class="bi bi-clipboard-check me-2"></i>Total Enrollments
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_instructors }}</div>
+            <div class="stat-label">
+                <i class="bi bi-mortarboard me-2"></i>Instructors
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_students }}</div>
+            <div class="stat-label">
+                <i class="bi bi-person me-2"></i>Students
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.published_courses }}</div>
+            <div class="stat-label">
+                <i class="bi bi-check-circle me-2"></i>Published Courses
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_categories }}</div>
+            <div class="stat-label">
+                <i class="bi bi-grid me-2"></i>Categories
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Users and Courses -->
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="admin-table">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-people me-2"></i>Recent Users</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in recent_users %}
+                        <tr>
+                            <td><strong>{{ user.username }}</strong></td>
+                            <td>{{ user.email }}</td>
+                            <td><span class="badge bg-{{ 'success' if user.role == 'instructor' else 'primary' if user.role == 'student' else 'danger' }}">{{ user.get_role_display() }}</span></td>
+                            <td>{{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer text-end">
+                <a href="{{ url_for('admin_users') }}" class="btn btn-sm btn-primary">View All Users</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="admin-table">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-book me-2"></i>Recent Courses</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Instructor</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in recent_courses %}
+                        <tr>
+                            <td><strong>{{ course.title[:30] }}{% if course.title|length > 30 %}...{% endif %}</strong></td>
+                            <td>{{ course.instructor.username }}</td>
+                            <td><span class="badge bg-{{ 'success' if course.is_published else 'warning' }}">{{ 'Published' if course.is_published else 'Draft' }}</span></td>
+                            <td>{{ course.created_at.strftime('%b %d, %Y') if course.created_at else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer text-end">
+                <a href="{{ url_for('admin_courses') }}" class="btn btn-sm btn-success">View All Courses</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

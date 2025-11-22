@@ -1,0 +1,84 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Manage Enrollments - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h1 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Manage Enrollments</h1>
+    <p class="text-muted mb-0">
+        {% if course %}
+            Enrollments for: <strong>{{ course.title }}</strong>
+            <a href="{{ url_for('admin_enrollments') }}" class="btn btn-sm btn-secondary ms-2">View All Enrollments</a>
+        {% else %}
+            View all enrollments across all courses
+        {% endif %}
+    </p>
+</div>
+
+<!-- Enrollments Table -->
+<div class="admin-table">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    {% if not course %}
+                    <th>Course</th>
+                    {% endif %}
+                    <th>Enrolled Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if enrollments %}
+                    {% for enrollment in enrollments %}
+                    <tr>
+                        <td>
+                            <strong>{{ enrollment.student.username if enrollment.student else 'Unknown' }}</strong>
+                            <br>
+                            <small class="text-muted">{{ enrollment.student.email if enrollment.student else '-' }}</small>
+                        </td>
+                        {% if not course %}
+                        <td>
+                            <a href="{{ url_for('course_detail', course_id=enrollment.course_id) }}">{{ enrollment.course.title if enrollment.course else 'Unknown' }}</a>
+                        </td>
+                        {% endif %}
+                        <td>{{ enrollment.enrolled_at.strftime('%b %d, %Y %I:%M %p') if enrollment.enrolled_at else 'N/A' }}</td>
+                        <td>
+                            {% if enrollment.course %}
+                                <a href="{{ url_for('course_detail', course_id=enrollment.course_id) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View Course
+                                </a>
+                                <a href="{{ url_for('admin_enrollments', course_id=enrollment.course_id) }}" class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-list"></i> Course Enrollments
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="{% if course %}4{% else %}5{% endif %}" class="text-center text-muted py-4">
+                            {% if course %}
+                                No enrollments found for this course
+                            {% else %}
+                                No enrollments found
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if not course %}
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title">Filter by Course</h5>
+        <p class="text-muted">To filter enrollments by a specific course, add <code>?course_id=X</code> to the URL or click on course enrollments from the course detail page.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+

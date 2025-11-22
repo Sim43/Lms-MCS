@@ -1,0 +1,87 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Manage Categories - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h1 class="mb-0"><i class="bi bi-grid me-2"></i>Manage Categories</h1>
+    <p class="text-muted mb-0">View and manage course categories</p>
+</div>
+
+<div class="row g-4">
+    <!-- Categories List -->
+    <div class="col-md-8">
+        <div class="admin-table">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-list me-2"></i>All Categories</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Courses</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if categories %}
+                            {% for category in categories %}
+                            <tr>
+                                <td><strong>{{ category.name }}</strong></td>
+                                <td>{{ category.description[:50] if category.description else '-' }}{% if category.description and category.description|length > 50 %}...{% endif %}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ category.courses|length }}</span>
+                                </td>
+                                <td>{{ category.created_at.strftime('%b %d, %Y') if category.created_at else 'N/A' }}</td>
+                                <td>
+                                    <form method="post" action="{{ url_for('admin_delete_category', category_id=category.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-danger" 
+                                                onclick="return confirm('Delete category {{ category.name }}? This will only work if no courses use this category.')">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No categories found</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Category Form -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Create Category</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('admin_create_category') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-plus-circle me-2"></i>Create Category
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

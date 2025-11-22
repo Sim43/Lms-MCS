@@ -1,0 +1,94 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Manage Lessons - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h1 class="mb-0"><i class="bi bi-file-text me-2"></i>Manage Lessons</h1>
+    <p class="text-muted mb-0">
+        {% if course %}
+            Lessons for: <strong>{{ course.title }}</strong>
+            <a href="{{ url_for('admin_lessons') }}" class="btn btn-sm btn-secondary ms-2">View All Lessons</a>
+        {% else %}
+            View all lessons across all courses
+        {% endif %}
+    </p>
+</div>
+
+<!-- Lessons Table -->
+<div class="admin-table">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    {% if not course %}
+                    <th>Course</th>
+                    {% endif %}
+                    <th>Order</th>
+                    <th>Type</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if lessons %}
+                    {% for lesson in lessons %}
+                    <tr>
+                        <td><strong>{{ lesson.title }}</strong></td>
+                        {% if not course %}
+                        <td>
+                            <a href="{{ url_for('course_detail', course_id=lesson.course_id) }}">{{ lesson.course.title if lesson.course else 'Unknown' }}</a>
+                        </td>
+                        {% endif %}
+                        <td>{{ lesson.order }}</td>
+                        <td>
+                            {% if lesson.video_url %}
+                                <span class="badge bg-danger"><i class="bi bi-youtube"></i> Video URL</span>
+                            {% elif lesson.video_file %}
+                                <span class="badge bg-warning"><i class="bi bi-file-play"></i> Video File</span>
+                            {% elif lesson.text_content %}
+                                <span class="badge bg-info"><i class="bi bi-file-text"></i> Text</span>
+                            {% else %}
+                                <span class="badge bg-secondary">None</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ lesson.created_at.strftime('%b %d, %Y') if lesson.created_at else 'N/A' }}</td>
+                        <td>
+                            <a href="{{ url_for('lesson_detail', lesson_id=lesson.id) }}" class="btn btn-sm btn-info">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            {% if lesson.course %}
+                                <a href="{{ url_for('admin_lessons', course_id=lesson.course_id) }}" class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-list"></i> Course Lessons
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="{% if course %}6{% else %}7{% endif %}" class="text-center text-muted py-4">
+                            {% if course %}
+                                No lessons found for this course
+                            {% else %}
+                                No lessons found
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if not course %}
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title">Filter by Course</h5>
+        <p class="text-muted">To filter lessons by a specific course, click on the course name in the table above, or use the course detail page to view all lessons for that course.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+

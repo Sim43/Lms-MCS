@@ -1,0 +1,75 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Admin Settings - LMS{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h1 class="mb-0"><i class="bi bi-gear me-2"></i>Admin Settings</h1>
+    <p class="text-muted mb-0">System configuration and settings</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-key me-2"></i>Instructor Registration Key</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Current Registration Key:</strong> <code class="fs-5">{{ instructor_key }}</code>
+                </div>
+                <p class="text-muted">
+                    This key is required for instructors to register. Share this key with authorized teachers only.
+                    To change the key, edit <code>backend/app.py</code> and update <code>INSTRUCTOR_REGISTRATION_KEY</code>.
+                </p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Note:</strong> Changing the registration key requires restarting the server.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-shield-check me-2"></i>Security</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        CSRF Protection: <strong>Enabled</strong>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Password Hashing: <strong>Enabled</strong>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Role-Based Access: <strong>Enabled</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-people me-2"></i>Manage Users
+                    </a>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-speedometer2 me-2"></i>View Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

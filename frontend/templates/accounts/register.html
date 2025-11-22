@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+
+{% block title %}Register - LMS{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-success text-white text-center py-3">
+                    <h4 class="mb-0 fw-bold"><i class="bi bi-person-plus me-2"></i>Create Account</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">Username</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small">{{ form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label">Email</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">I want to be a:</label>
+                            <div class="border rounded p-3 bg-light">
+                                {% set role_choices = [('student', 'Student', 'Enroll in courses and learn'), ('instructor', 'Instructor', 'Create and manage courses')] %}
+                                {% for subfield in form.role %}
+                                    {% set choice_index = loop.index0 %}
+                                    {% set choice_data = role_choices[choice_index] %}
+                                    <div class="form-check {% if not loop.last %}mb-2{% endif %}">
+                                        {{ subfield(class="form-check-input") }}
+                                        <label class="form-check-label" for="{{ subfield.id }}">
+                                            {% if choice_data[0] == 'student' %}
+                                                <i class="bi bi-person me-2"></i><strong>{{ choice_data[1] }}</strong>
+                                                <small class="d-block text-muted ms-4">{{ choice_data[2] }}</small>
+                                            {% elif choice_data[0] == 'instructor' %}
+                                                <i class="bi bi-mortarboard me-2"></i><strong>{{ choice_data[1] }}</strong>
+                                                <small class="d-block text-muted ms-4">{{ choice_data[2] }}</small>
+                                            {% else %}
+                                                {{ subfield.label.text }}
+                                            {% endif %}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if form.role.errors %}
+                                <div class="text-danger small">{{ form.role.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_password" class="form-label">Password</label>
+                            {{ form.password }}
+                            {% if form.password.errors %}
+                                <div class="text-danger small">{{ form.password.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted">Must be at least 8 characters long.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_password2" class="form-label">Confirm Password</label>
+                            {{ form.password2 }}
+                            {% if form.password2.errors %}
+                                <div class="text-danger small">{{ form.password2.errors }}</div>
+                            {% endif %}
+                        </div>
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                {% for field, errors in form.errors.items() %}
+                                    {% for error in errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-person-plus me-2"></i>Register
+                            </button>
+                        </div>
+                    </form>
+                    <hr class="my-4">
+                    <div class="text-center">
+                        <p class="mb-0 text-muted">Already have an account? 
+                            <a href="{{ url_for('login') }}" class="text-success fw-bold">Login here</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
