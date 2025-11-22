@@ -2,6 +2,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import secrets
+import string
 
 db = SQLAlchemy()
 
@@ -71,6 +73,7 @@ class Course(db.Model):
     thumbnail = db.Column(db.String(255), nullable=True)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
     is_published = db.Column(db.Boolean, default=False)
+    course_code = db.Column(db.String(20), unique=True, nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -91,6 +94,16 @@ class Course(db.Model):
     
     def get_lessons_count(self):
         return len(self.lessons)
+    
+    @staticmethod
+    def generate_course_code():
+        """Generate a unique 8-character alphanumeric course code"""
+        while True:
+            # Generate 8-character code (uppercase letters and numbers)
+            code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+            # Check if code already exists
+            if not Course.query.filter_by(course_code=code).first():
+                return code
     
     def __repr__(self):
         return f'<Course {self.title}>'

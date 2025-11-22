@@ -110,10 +110,10 @@
                 <div class="card mt-3">
                     <div class="card-body">
                         <h6>Instructor Actions</h6>
-                        <a href="{{ url_for('lesson_edit', course_id=lesson.id) }}" class="btn btn-warning btn-sm w-100 mb-2">
+                        <a href="{{ url_for('lesson_edit', lesson_id=lesson.id) }}" class="btn btn-warning btn-sm w-100 mb-2">
                             <i class="bi bi-pencil"></i> Edit Lesson
                         </a>
-                        <a href="{{ url_for('lesson_delete', course_id=lesson.id) }}" class="btn btn-danger btn-sm w-100">
+                        <a href="{{ url_for('lesson_delete', lesson_id=lesson.id) }}" class="btn btn-danger btn-sm w-100">
                             <i class="bi bi-trash"></i> Delete Lesson
                         </a>
                     </div>

@@ -40,7 +40,7 @@
             <!-- Lessons -->
             <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Course Lessons ({{ course.get_lessons_count }})</h5>
+                    <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Course Lessons ({{ course.get_lessons_count() }})</h5>
                 </div>
                 <div class="list-group list-group-flush">
                     {% if course.lessons %}
@@ -50,7 +50,7 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="flex-grow-1">
                                             <div class="d-flex align-items-center mb-1">
-                                                <span class="badge bg-secondary me-2">Lesson {{ forloop.counter }}</span>
+                                                <span class="badge bg-secondary me-2">Lesson {{ loop.index }}</span>
                                                 <h6 class="mb-0 fw-bold">{{ lesson.title }}</h6>
                                             </div>
                                             <small class="text-muted">
@@ -99,6 +99,13 @@
                 <div class="card-body text-center">
                     {% if current_user.is_authenticated %}
                         {% if current_user == course.instructor %}
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-key me-2"></i>
+                                <strong>Course Code:</strong> <code class="fs-5">{{ course.course_code }}</code>
+                                <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyCourseCode('{{ course.course_code }}')" title="Copy code">
+                                    <i class="bi bi-clipboard"></i> Copy
+                                </button>
+                            </div>
                             <h5 class="mb-4 fw-bold">Instructor Actions</h5>
                             <div class="d-grid gap-2">
                                 <a href="{{ url_for('course_edit', course_id=course.id) }}" class="btn btn-warning">
@@ -128,19 +135,19 @@
                             </div>
                         {% elif current_user.is_student() %}
                             <h5 class="mb-3 fw-bold">Enroll in this Course</h5>
-                            <p class="text-muted mb-4">Enrollment is free!</p>
-                            <a href="{{ url_for('enroll', course_id=course.id) }}" class="btn btn-primary btn-lg w-100">
-                                <i class="bi bi-plus-circle me-2"></i>Enroll Now
+                            <p class="text-muted mb-4">You need the course code to enroll in this course.</p>
+                            <a href="{{ url_for('enroll_by_code') }}" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-key me-2"></i>Enroll with Code
                             </a>
                         {% endif %}
                     {% else %}
                         <h5 class="mb-3 fw-bold">Get Started</h5>
                         <p class="text-muted mb-4">Login or register to enroll in this course for free!</p>
                         <div class="d-grid gap-2">
-                            <a href="{{ url_for('accounts:login') }}" class="btn btn-primary">
+                            <a href="{{ url_for('login') }}" class="btn btn-primary">
                                 <i class="bi bi-box-arrow-in-right me-2"></i>Login
                             </a>
-                            <a href="{{ url_for('accounts:register') }}" class="btn btn-outline-primary">
+                            <a href="{{ url_for('register_student') }}" class="btn btn-outline-primary">
                                 <i class="bi bi-person-plus me-2"></i>Register
                             </a>
                         </div>
@@ -159,17 +166,17 @@
                             <i class="bi bi-people text-primary me-2"></i>
                             <strong>Enrollments</strong>
                         </div>
-                        <span class="badge bg-primary">{{ course.get_enrollment_count }}</span>
+                        <span class="badge bg-primary">{{ course.get_enrollment_count() }}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
                         <div>
                             <i class="bi bi-list-ul text-success me-2"></i>
                             <strong>Lessons</strong>
                         </div>
-                        <span class="badge bg-success">{{ course.get_lessons_count }}</span>
+                        <span class="badge bg-success">{{ course.get_lessons_count() }}</span>
                     </div>
                     {% if course.category %}
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
                             <div>
                                 <i class="bi bi-folder text-warning me-2"></i>
                                 <strong>Category</strong>
@@ -177,10 +184,50 @@
                             <span class="badge bg-warning text-dark">{{ course.category.name }}</span>
                         </div>
                     {% endif %}
+                    {% if current_user == course.instructor %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-key text-danger me-2"></i>
+                                <strong>Course Code</strong>
+                            </div>
+                            <div>
+                                <code class="fs-5 fw-bold text-danger">{{ course.course_code }}</code>
+                                <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyCourseCode('{{ course.course_code }}')" title="Copy code">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+function copyCourseCode(code) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(function() {
+            alert('Course code copied to clipboard: ' + code);
+        }, function() {
+            fallbackCopy(code);
+        });
+    } else {
+        fallbackCopy(code);
+    }
+}
+
+function fallbackCopy(code) {
+    const textarea = document.createElement('textarea');
+    textarea.value = code;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    alert('Course code copied to clipboard: ' + code);
+}
+</script>
 {% endblock %}
 

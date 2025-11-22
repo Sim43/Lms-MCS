@@ -58,27 +58,24 @@
         </div>
     </div>
     
-    <!-- Create Category Form -->
+    <!-- Category Info -->
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Create Category</h5>
+        <div class="card bg-info text-white">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>About Categories</h5>
             </div>
             <div class="card-body">
-                <form method="post" action="{{ url_for('admin_create_category') }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Category Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="name" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-success w-100">
-                        <i class="bi bi-plus-circle me-2"></i>Create Category
-                    </button>
-                </form>
+                <p class="mb-3">Categories are automatically created when instructors create courses using course codes (e.g., CS, EE, HU, MATH).</p>
+                <p class="mb-0"><strong>Common Course Codes:</strong></p>
+                <ul class="mb-3 small">
+                    <li>CS - Computer Science</li>
+                    <li>EE - Electrical Engineering</li>
+                    <li>HU - Humanities</li>
+                    <li>MATH - Mathematics</li>
+                    <li>BIO - Biology</li>
+                    <li>And more...</li>
+                </ul>
+                <p class="mb-0 small">Instructors can select from predefined codes or specify a custom code when creating courses.</p>
             </div>
         </div>
     </div>

@@ -3,72 +3,179 @@
 {% block title %}Home - LMS{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
+<!-- Student Home Page -->
+{% if current_user.is_authenticated and current_user.is_student() %}
+    <!-- Hero Section for Students -->
 <div class="hero-section">
     <div class="container text-center">
         <h1 class="display-4 fw-bold mb-4">Welcome to Learning Management System</h1>
-        <p class="lead mb-4">Discover amazing courses and enhance your skills for free!</p>
+            <p class="lead mb-4">Enroll in courses using course codes from your instructor!</p>
         <div class="d-flex gap-3 justify-content-center flex-wrap">
-            <a href="{{ url_for('course_list') }}" class="btn btn-light btn-lg px-4">
-                <i class="bi bi-search me-2"></i> Browse Courses
-            </a>
-            {% if not current_user.is_authenticated %}
-                <a href="{{ url_for('register_student') }}" class="btn btn-outline-light btn-lg px-4">
-                    <i class="bi bi-person-plus me-2"></i> Get Started
+                <a href="{{ url_for('enroll_by_code') }}" class="btn btn-light btn-lg px-4">
+                    <i class="bi bi-key me-2"></i> Enroll with Code
                 </a>
-            {% endif %}
+                <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-light btn-lg px-4">
+                    <i class="bi bi-house me-2"></i> My Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enrollment by Code Info -->
+    <div class="container mb-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card bg-light border-0 shadow-sm">
+                    <div class="card-body text-center p-5">
+                        <i class="bi bi-key text-primary mb-3" style="font-size: 4rem;"></i>
+                        <h3 class="mb-3 fw-bold">Enroll in Courses</h3>
+                        <p class="lead text-muted mb-4">
+                            Courses are private and require a course code to enroll. Get your course code from your instructor.
+                        </p>
+                        <a href="{{ url_for('enroll_by_code') }}" class="btn btn-primary btn-lg px-4">
+                            <i class="bi bi-key me-2"></i>Enroll with Course Code
+                </a>
+                    </div>
+                </div>
         </div>
     </div>
 </div>
 
-<!-- Featured Courses -->
+    <!-- Call to Action for Students -->
 <div class="container mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0"><i class="bi bi-star-fill text-warning me-2"></i> Featured Courses</h2>
-        <a href="{{ url_for('course_list') }}" class="btn btn-outline-primary">
-            View All <i class="bi bi-arrow-right ms-1"></i>
-        </a>
+        <div class="card bg-primary text-white shadow-lg">
+            <div class="card-body text-center p-5">
+                <h3 class="mb-3 fw-bold">Ready to Start Learning?</h3>
+                <p class="lead mb-4 opacity-90">Join thousands of students and start your learning journey today!</p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{{ url_for('course_list') }}" class="btn btn-light btn-lg px-4">
+                        <i class="bi bi-search me-2"></i> My Courses
+                    </a>
+                    <a href="{{ url_for('enroll_by_code') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-key me-2"></i> Enroll with Code
+                    </a>
+                    <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-house me-2"></i> My Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-    {% if featured_courses %}
-        <div class="row g-4">
-            {% for course in featured_courses %}
-                <div class="col-md-4">
-                    <div class="card course-card">
-                        {% if course.thumbnail %}
-                            <img src="{{ url_for('media', filename=course.thumbnail) }}" class="card-img-top course-thumbnail" alt="{{ course.title }}">
-                        {% else %}
-                            <div class="card-img-top course-thumbnail bg-secondary d-flex align-items-center justify-content-center">
-                                <i class="bi bi-book text-white" style="font-size: 4rem;"></i>
+{% elif current_user.is_authenticated and current_user.is_instructor() %}
+    <!-- Hero Section for Instructors -->
+    <div class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-4">Welcome to Learning Management System</h1>
+            <p class="lead mb-4">Create and manage your courses! Share course codes with your students.</p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a href="{{ url_for('course_create') }}" class="btn btn-light btn-lg px-4">
+                    <i class="bi bi-plus-circle me-2"></i> Create New Course
+                </a>
+                <a href="{{ url_for('instructor_dashboard') }}" class="btn btn-outline-light btn-lg px-4">
+                    <i class="bi bi-mortarboard me-2"></i> My Dashboard
+                </a>
+            </div>
+        </div>
                             </div>
-                        {% endif %}
-                        <div class="card-body d-flex flex-column">
-                            {% if course.category %}
-                                <span class="badge bg-primary mb-3 align-self-start">{{ course.category.name if course.category else 'Uncategorized' }}</span>
-                            {% endif %}
-                            <h5 class="card-title fw-bold mb-3">{{ course.title }}</h5>
-                            <p class="card-text text-muted mb-3 flex-grow-1">{{ course.description[:100] }}...</p>
-                            <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
-                                <small class="text-muted">
-                                    <i class="bi bi-person me-1"></i> {{ course.instructor.username if course.instructor else 'Unknown' }}
-                                </small>
-                                <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-primary btn-sm">
-                                    <i class="bi bi-eye me-1"></i> View
+
+    <!-- Course Management Info for Instructors -->
+    <div class="container mb-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card bg-light border-0 shadow-sm">
+                    <div class="card-body text-center p-5">
+                        <i class="bi bi-book text-success mb-3" style="font-size: 4rem;"></i>
+                        <h3 class="mb-3 fw-bold">Manage Your Courses</h3>
+                        <p class="lead text-muted mb-4">
+                            Create courses, add lessons, and share course codes with your students. All courses are private and require a course code for enrollment.
+                        </p>
+                        <a href="{{ url_for('course_create') }}" class="btn btn-success btn-lg px-4">
+                            <i class="bi bi-plus-circle me-2"></i>Create Your First Course
                                 </a>
                             </div>
                         </div>
                     </div>
                 </div>
-            {% endfor %}
+    </div>
+
+    <!-- Call to Action for Instructors -->
+    <div class="container mb-5">
+        <div class="card bg-success text-white shadow-lg">
+            <div class="card-body text-center p-5">
+                <h3 class="mb-3 fw-bold">Ready to Teach?</h3>
+                <p class="lead mb-4 opacity-90">Start creating engaging courses and share knowledge with your students!</p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{{ url_for('instructor_dashboard') }}" class="btn btn-light btn-lg px-4">
+                        <i class="bi bi-mortarboard me-2"></i> View Dashboard
+                    </a>
+                    <a href="{{ url_for('course_create') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-plus-circle me-2"></i> Create Course
+                    </a>
+                    <a href="{{ url_for('course_list') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-book me-2"></i> My Courses
+                    </a>
+                </div>
+            </div>
+        </div>
         </div>
     {% else %}
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> No courses available yet. Check back soon!
+    <!-- Hero Section for Unauthenticated Users -->
+    <div class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-4">Welcome to Learning Management System</h1>
+            <p class="lead mb-4">Enroll in courses using course codes from your instructor!</p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a href="{{ url_for('register_student') }}" class="btn btn-light btn-lg px-4">
+                    <i class="bi bi-person-plus me-2"></i> Get Started
+                </a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg px-4">
+                    <i class="bi bi-box-arrow-in-right me-2"></i> Login
+                </a>
+            </div>
         </div>
-    {% endif %}
+    </div>
+
+    <!-- Enrollment by Code Info -->
+    <div class="container mb-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card bg-light border-0 shadow-sm">
+                    <div class="card-body text-center p-5">
+                        <i class="bi bi-key text-primary mb-3" style="font-size: 4rem;"></i>
+                        <h3 class="mb-3 fw-bold">Enroll in Courses</h3>
+                        <p class="lead text-muted mb-4">
+                            Courses are private and require a course code to enroll. Get your course code from your instructor.
+                        </p>
+                        <a href="{{ url_for('register_student') }}" class="btn btn-primary btn-lg px-4">
+                            <i class="bi bi-person-plus me-2"></i>Register to Enroll
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
 </div>
 
-<!-- Categories -->
-{% if categories %}
+    <!-- Call to Action for Unauthenticated -->
+    <div class="container mb-5">
+        <div class="card bg-primary text-white shadow-lg">
+            <div class="card-body text-center p-5">
+                <h3 class="mb-3 fw-bold">Ready to Start Learning?</h3>
+                <p class="lead mb-4 opacity-90">Join thousands of students and start your learning journey today!</p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{{ url_for('register_student') }}" class="btn btn-light btn-lg px-4">
+                        <i class="bi bi-person-plus me-2"></i> Get Started for Free
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-box-arrow-in-right me-2"></i> Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Categories (only show for unauthenticated users) -->
+{% if not current_user.is_authenticated and categories %}
 <div class="container mb-5">
     <h2 class="mb-4"><i class="bi bi-grid me-2"></i> Browse by Category</h2>
     <div class="row g-4">
@@ -87,34 +194,5 @@
     </div>
 </div>
 {% endif %}
-
-<!-- Call to Action -->
-<div class="container mb-5">
-    <div class="card bg-primary text-white shadow-lg">
-        <div class="card-body text-center p-5">
-            <h3 class="mb-3 fw-bold">Ready to Start Learning?</h3>
-            <p class="lead mb-4 opacity-90">Join thousands of students and start your learning journey today!</p>
-            <div class="d-flex gap-3 justify-content-center flex-wrap">
-                {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('course_list') }}" class="btn btn-light btn-lg px-4">
-                        <i class="bi bi-search me-2"></i> Browse All Courses
-                    </a>
-                    {% if current_user.is_student() %}
-                        <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-light btn-lg px-4">
-                            <i class="bi bi-house me-2"></i> My Dashboard
-                        </a>
-                    {% endif %}
-                {% else %}
-                    <a href="{{ url_for('register_student') }}" class="btn btn-light btn-lg px-4">
-                        <i class="bi bi-person-plus me-2"></i> Get Started for Free
-                    </a>
-                    <a href="{{ url_for('course_list') }}" class="btn btn-outline-light btn-lg px-4">
-                        <i class="bi bi-search me-2"></i> Browse Courses
-                    </a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 

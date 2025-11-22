@@ -16,8 +16,13 @@ def instructor_required(f):
     @wraps(f)
     @login_required
     def decorated_function(*args, **kwargs):
+        if current_user.is_admin():
+            flash('Access denied. Admin users cannot access instructor features.', 'error')
+            return redirect(url_for('admin_dashboard'))
         if not current_user.is_instructor():
             flash('Access denied. Instructor access required.', 'error')
+            if current_user.is_student():
+                return redirect(url_for('student_dashboard'))
             return redirect(url_for('home'))
         return f(*args, **kwargs)
     return decorated_function
@@ -51,15 +56,21 @@ def allowed_file(filename, file_type='image'):
 # Home page
 @app.route('/')
 def home():
-    featured_courses = Course.query.filter_by(is_published=True).limit(6).all()
+    """Home page - courses are now private, enrollment by code only"""
+    # Redirect admins to admin panel immediately
+    if current_user.is_authenticated and current_user.is_admin():
+        return redirect(url_for('admin_dashboard'))
+    
     categories = Category.query.limit(6).all()
-    return render_template('courses/home.html', featured_courses=featured_courses, categories=categories)
+    return render_template('courses/home.html', categories=categories)
 
 # Authentication routes
 @app.route('/accounts/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        if current_user.is_instructor():
+        if current_user.is_admin():
+            return redirect(url_for('admin_dashboard'))
+        elif current_user.is_instructor():
             return redirect(url_for('instructor_dashboard'))
         else:
             return redirect(url_for('student_dashboard'))
@@ -72,7 +83,9 @@ def login():
             flash(f'Welcome back, {user.username}!', 'success')
             next_page = request.args.get('next')
             if not next_page:
-                if user.is_instructor():
+                if user.is_admin():
+                    next_page = url_for('admin_dashboard')
+                elif user.is_instructor():
                     next_page = url_for('instructor_dashboard')
                 else:
                     next_page = url_for('student_dashboard')
@@ -166,38 +179,94 @@ def register_instructor():
 # Course routes
 @app.route('/courses')
 def course_list():
+    """Course listing - only shows courses the user is enrolled in or is an instructor"""
+    # Admins should use admin panel
+    if current_user.is_authenticated and current_user.is_admin():
+        flash('Please use the Admin Panel to manage courses.', 'info')
+        return redirect(url_for('admin_courses'))
+    
     search = request.args.get('search', '')
-    category_name = request.args.get('category', '')
+    # Support multiple category selection
+    category_names = request.args.getlist('category')  # Get list of selected categories
     
-    query = Course.query.filter_by(is_published=True)
-    
-    if category_name:
-        category = Category.query.filter_by(name=category_name).first()
-        if category:
-            query = query.filter_by(category_id=category.id)
-    
-    if search:
-        query = query.filter(
-            or_(
-                Course.title.contains(search),
-                Course.description.contains(search)
+    # For non-authenticated users, show empty list
+    if not current_user.is_authenticated:
+        courses = []
+    elif current_user.is_instructor():
+        # Instructors can see their own courses
+        query = Course.query.filter_by(instructor_id=current_user.id, is_published=True)
+        if category_names:
+            # Filter by multiple categories
+            category_objs = Category.query.filter(Category.name.in_(category_names)).all()
+            if category_objs:
+                category_ids = [c.id for c in category_objs]
+                query = query.filter(Course.category_id.in_(category_ids))
+        if search:
+            query = query.filter(
+                or_(
+                    Course.title.contains(search),
+                    Course.description.contains(search)
+                )
             )
-        )
+        courses = query.all()
+    else:
+        # Students can only see courses they're enrolled in
+        enrollments = Enrollment.query.filter_by(student_id=current_user.id).all()
+        enrolled_course_ids = [e.course_id for e in enrollments]
+        if not enrolled_course_ids:
+            courses = []
+        else:
+            query = Course.query.filter(Course.id.in_(enrolled_course_ids), Course.is_published == True)
+            if category_names:
+                # Filter by multiple categories
+                category_objs = Category.query.filter(Category.name.in_(category_names)).all()
+                if category_objs:
+                    category_ids = [c.id for c in category_objs]
+                    query = query.filter(Course.category_id.in_(category_ids))
+            if search:
+                query = query.filter(
+                    or_(
+                        Course.title.contains(search),
+                        Course.description.contains(search)
+                    )
+                )
+            courses = query.all()  # Always execute query
     
-    courses = query.all()
-    categories = Category.query.all()
+    categories = Category.query.order_by(Category.name).all()
     return render_template('courses/course_list.html', courses=courses, categories=categories, 
-                         selected_category=category_name, search_query=search)
+                         selected_categories=category_names, search_query=search)
 
 @app.route('/courses/<int:course_id>')
 def course_detail(course_id):
     course = Course.query.get_or_404(course_id)
-    if not course.is_published and current_user != course.instructor:
-        flash('Course not found.', 'error')
-        return redirect(url_for('course_list'))
     
+    # Check access permissions
+    can_access = False
     is_enrolled = False
-    if current_user.is_authenticated:
+    
+    if not current_user.is_authenticated:
+        flash('Please login to view course details.', 'error')
+        return redirect(url_for('login'))
+    
+    # Admins should use admin panel, redirect them
+    if current_user.is_admin():
+        flash('Please use the Admin Panel to manage courses.', 'info')
+        return redirect(url_for('admin_courses'))
+    # Instructors can access their own courses
+    elif current_user.is_instructor() and course.instructor_id == current_user.id:
+        can_access = True
+    # Students can access courses they're enrolled in
+    elif current_user.is_student():
+        enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first()
+        if enrollment:
+            is_enrolled = True
+            can_access = True
+    
+    if not can_access:
+        flash('You must enroll in this course using the course code to access it.', 'error')
+        return redirect(url_for('enroll_by_code'))
+    
+    if current_user.is_student() and not is_enrolled:
         enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first()
         is_enrolled = enrollment is not None
     
@@ -206,16 +275,54 @@ def course_detail(course_id):
 @app.route('/courses/create', methods=['GET', 'POST'])
 @instructor_required
 def course_create():
+    from .category_codes import get_category_code_choices, normalize_category_code
+    
+    # Get choices first
+    category_choices = get_category_code_choices()
+    
+    # Create form - choices will be set in __init__ method
     form = CourseForm()
-    form.category_id.choices = [(0, 'Select a category')] + [(c.id, c.name) for c in Category.query.all()]
+    # Ensure choices are set (in case __init__ didn't work)
+    if not form.category_code.choices or len(form.category_code.choices) <= 1:
+        form.category_code.choices = category_choices
     
     if form.validate_on_submit():
+        # Ensure choices are still set during validation
+        form.category_code.choices = category_choices
+        # Handle category code
+        category_id = None
+        category_code_value = form.category_code.data
+        
+        if category_code_value == 'OTHER':
+            # Use custom category code from "Other" field
+            custom_code = normalize_category_code(form.category_other.data)
+            if custom_code:
+                # Find or create category with this code
+                category = Category.query.filter_by(name=custom_code).first()
+                if not category:
+                    category = Category(name=custom_code, description=f'Custom category: {custom_code}')
+                    db.session.add(category)
+                    db.session.commit()
+                category_id = category.id
+        elif category_code_value and category_code_value != '' and category_code_value != 'OTHER':
+            # Use predefined category code (the value is already just the code like "CS", "EE", etc.)
+            code = normalize_category_code(category_code_value)
+            if code:
+                # Find or create category with this code
+                category = Category.query.filter_by(name=code).first()
+                if not category:
+                    category = Category(name=code, description=f'Category: {code}')
+                    db.session.add(category)
+                    db.session.commit()
+                category_id = category.id
+        
         course = Course(
             title=form.title.data,
             description=form.description.data,
             instructor_id=current_user.id,
-            category_id=form.category_id.data if form.category_id.data else None,
-            is_published=True
+            category_id=category_id,
+            is_published=True,
+            course_code=Course.generate_course_code()
         )
         
         if 'thumbnail' in request.files:
@@ -231,23 +338,73 @@ def course_create():
         flash('Course created successfully!', 'success')
         return redirect(url_for('course_detail', course_id=course.id))
     
+    # Ensure choices are set again after validation (in case validation fails)
+    form.category_code.choices = get_category_code_choices()
+    
     return render_template('courses/course_create.html', form=form)
 
 @app.route('/courses/<int:course_id>/edit', methods=['GET', 'POST'])
 @instructor_required
 def course_edit(course_id):
+    from .category_codes import get_category_code_choices, normalize_category_code
+    
     course = Course.query.get_or_404(course_id)
     if course.instructor_id != current_user.id:
         flash('Access denied. You can only edit your own courses.', 'error')
         return redirect(url_for('course_detail', course_id=course_id))
     
     form = CourseForm(obj=course)
-    form.category_id.choices = [(0, 'Select a category')] + [(c.id, c.name) for c in Category.query.all()]
+    # Set category code choices
+    form.category_code.choices = get_category_code_choices()
+    
+    # Set current category code if exists
+    if course.category:
+        current_category_name = course.category.name
+        # Try to match with predefined codes
+        choices_list = get_category_code_choices()
+        choices_dict = {code: display for code, display in choices_list}
+        
+        # Check if current category matches any predefined code
+        if current_category_name in choices_dict:
+            form.category_code.data = current_category_name
+        else:
+            # It's a custom category, set to "OTHER" and fill the other field
+            form.category_code.data = 'OTHER'
+            form.category_other.data = current_category_name
     
     if form.validate_on_submit():
         course.title = form.title.data
         course.description = form.description.data
-        course.category_id = form.category_id.data if form.category_id.data else None
+        
+        # Handle category code
+        category_id = None
+        category_code_value = form.category_code.data
+        
+        if category_code_value == 'OTHER':
+            # Use custom category code from "Other" field
+            custom_code = normalize_category_code(form.category_other.data)
+            if custom_code:
+                # Find or create category with this code
+                category = Category.query.filter_by(name=custom_code).first()
+                if not category:
+                    category = Category(name=custom_code, description=f'Custom category: {custom_code}')
+                    db.session.add(category)
+                    db.session.commit()
+                category_id = category.id
+        elif category_code_value and category_code_value != '':
+            # Use predefined category code
+            code = category_code_value.split(' - ')[0] if ' - ' in category_code_value else category_code_value
+            code = normalize_category_code(code)
+            if code:
+                # Find or create category with this code
+                category = Category.query.filter_by(name=code).first()
+                if not category:
+                    category = Category(name=code, description=f'Category: {code}')
+                    db.session.add(category)
+                    db.session.commit()
+                category_id = category.id
+        
+        course.category_id = category_id
         
         if 'thumbnail' in request.files:
             file = request.files['thumbnail']
@@ -266,6 +423,20 @@ def course_edit(course_id):
         db.session.commit()
         flash('Course updated successfully!', 'success')
         return redirect(url_for('course_detail', course_id=course_id))
+    
+    # Ensure choices are set again after validation
+    form.category_code.choices = get_category_code_choices()
+    if course.category:
+        current_category_name = course.category.name
+        choices_list = get_category_code_choices()
+        choices_dict = {code: display for code, display in choices_list}
+        
+        # Check if current category matches any predefined code
+        if current_category_name in choices_dict:
+            form.category_code.data = current_category_name
+        else:
+            form.category_code.data = 'OTHER'
+            form.category_other.data = current_category_name
     
     return render_template('courses/course_edit.html', form=form, course=course)
 
@@ -439,28 +610,47 @@ def lesson_delete(lesson_id):
     return render_template('lessons/lesson_delete.html', lesson=lesson)
 
 # Enrollment routes
-@app.route('/enrollments/course/<int:course_id>/enroll', methods=['GET', 'POST'])
+@app.route('/enroll', methods=['GET', 'POST'])
 @login_required
-def enroll(course_id):
-    course = Course.query.get_or_404(course_id)
-    
+def enroll_by_code():
+    """Enroll in a course using course code"""
+    if current_user.is_admin():
+        flash('Admin users cannot enroll in courses. Please use the Admin Panel.', 'error')
+        return redirect(url_for('admin_dashboard'))
     if current_user.is_instructor():
         flash('Instructors cannot enroll in courses.', 'error')
-        return redirect(url_for('course_detail', course_id=course_id))
+        return redirect(url_for('instructor_dashboard'))
     
-    # Check if already enrolled
-    enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course_id).first()
-    if enrollment:
-        flash('You are already enrolled in this course.', 'info')
-        return redirect(url_for('course_detail', course_id=course_id))
+    from .forms import EnrollmentForm
+    form = EnrollmentForm()
     
-    # Create enrollment
-    enrollment = Enrollment(student_id=current_user.id, course_id=course_id)
-    db.session.add(enrollment)
-    db.session.commit()
+    if form.validate_on_submit():
+        course_code = form.course_code.data.upper().strip()
+        course = Course.query.filter_by(course_code=course_code).first()
+        
+        if not course:
+            flash('Invalid course code. Please check and try again.', 'error')
+            return render_template('enrollments/enroll.html', form=form)
+        
+        if not course.is_published:
+            flash('This course is not available for enrollment.', 'error')
+            return render_template('enrollments/enroll.html', form=form)
+        
+        # Check if already enrolled
+        enrollment = Enrollment.query.filter_by(student_id=current_user.id, course_id=course.id).first()
+        if enrollment:
+            flash(f'You are already enrolled in "{course.title}".', 'info')
+            return redirect(url_for('course_detail', course_id=course.id))
+        
+        # Create enrollment
+        enrollment = Enrollment(student_id=current_user.id, course_id=course.id)
+        db.session.add(enrollment)
+        db.session.commit()
+        
+        flash(f'Successfully enrolled in {course.title}!', 'success')
+        return redirect(url_for('course_detail', course_id=course.id))
     
-    flash(f'Successfully enrolled in {course.title}!', 'success')
-    return render_template('enrollments/enrollment_success.html', course=course)
+    return render_template('enrollments/enroll.html', form=form)
 
 @app.route('/enrollments/course/<int:course_id>/unenroll', methods=['POST'])
 @login_required
@@ -480,7 +670,12 @@ def unenroll(course_id):
 @app.route('/dashboard/student')
 @login_required
 def student_dashboard():
+    # Only students can access student dashboard
+    if current_user.is_admin():
+        flash('Access denied. Admin users cannot access student dashboard.', 'error')
+        return redirect(url_for('admin_dashboard'))
     if current_user.is_instructor():
+        flash('Access denied. Instructors cannot access student dashboard.', 'error')
         return redirect(url_for('instructor_dashboard'))
     
     enrollments = Enrollment.query.filter_by(student_id=current_user.id).all()
@@ -491,6 +686,11 @@ def student_dashboard():
 @app.route('/dashboard/instructor')
 @instructor_required
 def instructor_dashboard():
+    # Only instructors can access instructor dashboard
+    if current_user.is_admin():
+        flash('Access denied. Admin users cannot access instructor dashboard.', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
     courses = Course.query.filter_by(instructor_id=current_user.id).all()
     
     # Calculate statistics

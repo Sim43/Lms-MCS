@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Enroll in Course - LMS{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0 fw-bold"><i class="bi bi-key me-2"></i>Enroll in Course</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Course Enrollment:</strong> Enter the 8-character course code provided by your instructor to enroll in a course.
+                    </div>
+                    <form method="post">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            <label for="course_code" class="form-label">Course Code <span class="text-danger">*</span></label>
+                            {{ form.course_code }}
+                            {% if form.course_code.errors %}
+                                <div class="text-danger small">{{ form.course_code.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted">Enter the 8-character course code (e.g., ABC12345)</small>
+                        </div>
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                {% for field, errors in form.errors.items() %}
+                                    {% for error in errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-key me-2"></i>Enroll with Code
+                            </button>
+                        </div>
+                    </form>
+                    <hr class="my-4">
+                    <div class="text-center">
+                        <p class="mb-0 text-muted">Need help? 
+                            <a href="{{ url_for('student_dashboard') }}" class="text-primary fw-bold">Go to Dashboard</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-uppercase course code input
+    document.addEventListener('DOMContentLoaded', function() {
+        const courseCodeInput = document.getElementById('course_code');
+        if (courseCodeInput) {
+            courseCodeInput.addEventListener('input', function(e) {
+                e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            });
+        }
+    });
+</script>
+{% endblock %}
+

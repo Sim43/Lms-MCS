@@ -7,17 +7,48 @@
 <div class="container my-5">
     <div class="row align-items-center mb-4">
         <div class="col-md-8">
-            <h1 class="mb-2"><i class="bi bi-book me-2"></i>All Courses</h1>
-            <p class="text-muted mb-0">Discover and enroll in courses that interest you</p>
+            <h1 class="mb-2">
+                <i class="bi bi-book me-2"></i>
+                {% if current_user.is_student() %}
+                    My Enrolled Courses
+                {% elif current_user.is_instructor() %}
+                    My Courses
+                {% else %}
+                    All Courses
+                {% endif %}
+            </h1>
+            <p class="text-muted mb-0">
+                {% if current_user.is_student() %}
+                    View all courses you're enrolled in. Use "Enroll with Code" to join new courses.
+                {% elif current_user.is_instructor() %}
+                    Manage your courses and share course codes with students for enrollment.
+                {% else %}
+                    Admin view of all courses
+                {% endif %}
+            </p>
         </div>
-        <div class="col-md-4">
-            <form method="get" class="mb-0">
+        <div class="col-md-4 text-md-end">
+            {% if current_user.is_student() %}
+                <a href="{{ url_for('enroll_by_code') }}" class="btn btn-success me-2 mb-2">
+                    <i class="bi bi-key me-2"></i>Enroll with Code
+                </a>
+            {% elif current_user.is_instructor() %}
+                <a href="{{ url_for('course_create') }}" class="btn btn-success me-2 mb-2">
+                    <i class="bi bi-plus-circle me-2"></i>Create Course
+                </a>
+            {% endif %}
+            <form method="get" class="d-inline mb-0" id="search-form">
                 <div class="input-group input-group-lg">
-                    <input type="text" class="form-control" name="search" placeholder="Search courses..." value="{{ search_query }}">
+                    <input type="text" class="form-control" name="search" placeholder="Search courses..." value="{{ search_query or '' }}">
                     <button class="btn btn-primary" type="submit">
                         <i class="bi bi-search"></i>
                     </button>
                 </div>
+                {% if selected_categories %}
+                    {% for cat in selected_categories %}
+                        <input type="hidden" name="category" value="{{ cat }}">
+                    {% endfor %}
+                {% endif %}
             </form>
         </div>
     </div>
@@ -25,20 +56,33 @@
     <div class="row">
         <!-- Sidebar for Categories -->
         <div class="col-md-3">
-            <div class="card mb-4 sticky-top" style="top: 20px;">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-grid me-2"></i>Categories</h5>
+            <div class="card mb-4 sticky-top shadow-sm" style="top: 20px; border: none;">
+                <div class="card-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h5 class="mb-0"><i class="bi bi-grid me-2"></i>Filter by Category</h5>
                 </div>
-                <div class="list-group list-group-flush">
-                    <a href="{{ url_for('course_list') }}" class="list-group-item list-group-item-action {% if not selected_category %}active fw-bold{% endif %}">
-                        <i class="bi bi-grid-3x3-gap me-2"></i>All Categories
-                    </a>
-                    {% for category in categories %}
-                        <a href="{{ url_for('course_list') }}?category={{ category.name }}" 
-                           class="list-group-item list-group-item-action {% if selected_category == category.name %}active fw-bold{% endif %}">
-                            <i class="bi bi-folder me-2"></i>{{ category.name }}
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="{% if search_query %}{{ url_for('course_list', search=search_query) }}{% else %}{{ url_for('course_list') }}{% endif %}" 
+                           class="list-group-item list-group-item-action border-0 mb-1 {% if not selected_categories or selected_categories|length == 0 %}bg-primary text-white fw-bold{% else %}text-dark{% endif %}" 
+                           style="{% if not selected_categories or selected_categories|length == 0 %}background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;{% endif %}">
+                            <i class="bi bi-grid-3x3-gap me-2"></i>All Categories
                         </a>
-                    {% endfor %}
+                        {% for category in categories %}
+                            <label class="list-group-item border-0 mb-1 category-item {% if category.name in (selected_categories or []) %}category-selected{% else %}category-unselected{% endif %}" 
+                                   style="cursor: pointer;">
+                                <input type="checkbox" 
+                                       class="form-check-input me-2 category-checkbox" 
+                                       name="category" 
+                                       value="{{ category.name }}" 
+                                       {% if category.name in (selected_categories or []) %}checked{% endif %}
+                                       data-category="{{ category.name }}">
+                                <i class="bi bi-folder me-2"></i>{{ category.name }}
+                                <span class="badge badge-category float-end">
+                                    {{ category.courses|length if category.courses else 0 }}
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -69,7 +113,7 @@
                                                 <i class="bi bi-person me-1"></i>{{ course.instructor.username }}
                                             </small>
                                             <small class="text-muted">
-                                                <i class="bi bi-people me-1"></i>{{ course.get_enrollment_count }}
+                                                <i class="bi bi-people me-1"></i>{{ course.get_enrollment_count() }}
                                             </small>
                                         </div>
                                         <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-primary w-100">
@@ -82,13 +126,170 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> No courses found. 
-                    {% if search_query %}Try a different search term.{% else %}Check back soon!{% endif %}
+                <div class="card">
+                    <div class="card-body text-center p-5">
+                        {% if current_user.is_student() %}
+                            <i class="bi bi-key text-muted mb-3" style="font-size: 4rem;"></i>
+                            <h4 class="mb-3">No courses found</h4>
+                            <p class="text-muted mb-4">
+                                {% if search_query %}
+                                    No courses match your search. Try a different search term.
+                                {% else %}
+                                    You haven't enrolled in any courses yet. Get a course code from your instructor and enroll!
+                                {% endif %}
+                            </p>
+                            <a href="{{ url_for('enroll_by_code') }}" class="btn btn-success btn-lg">
+                                <i class="bi bi-key me-2"></i>Enroll with Course Code
+                            </a>
+                        {% else %}
+                            <i class="bi bi-book text-muted mb-3" style="font-size: 4rem;"></i>
+                            <h4 class="mb-3">No courses found</h4>
+                            <p class="text-muted">
+                                {% if search_query %}Try a different search term.{% else %}No courses available.{% endif %}
+                            </p>
+                        {% endif %}
+                    </div>
                 </div>
             {% endif %}
         </div>
     </div>
 </div>
-{% endblock %}
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update visual states on page load
+    updateCategoryVisualStates();
+    
+    // Handle checkbox changes
+    document.querySelectorAll('.category-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateCategoryVisualStates();
+            submitCategoryFilter();
+        });
+        
+        // Prevent double-toggle when clicking label
+        checkbox.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+    
+    // Handle label clicks
+    document.querySelectorAll('.category-item').forEach(label => {
+        label.addEventListener('click', function(e) {
+            // Don't trigger if clicking the checkbox or badge
+            if (e.target.tagName === 'INPUT' || e.target.classList.contains('badge')) {
+                return;
+            }
+            
+            const checkbox = this.querySelector('.category-checkbox');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                checkbox.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+});
+
+function updateCategoryVisualStates() {
+    document.querySelectorAll('.category-item').forEach(item => {
+        const checkbox = item.querySelector('.category-checkbox');
+        const badge = item.querySelector('.badge');
+        
+        if (checkbox && checkbox.checked) {
+            // Selected state
+            item.classList.remove('category-unselected');
+            item.classList.add('category-selected');
+            item.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            item.style.color = 'white';
+            item.style.borderLeft = '3px solid #764ba2';
+            
+            if (badge) {
+                badge.classList.remove('bg-secondary', 'text-white');
+                badge.classList.add('bg-light', 'text-primary');
+            }
+        } else {
+            // Unselected state
+            item.classList.remove('category-selected');
+            item.classList.add('category-unselected');
+            item.style.background = '';
+            item.style.color = '';
+            item.style.borderLeft = '';
+            
+            if (badge) {
+                badge.classList.remove('bg-light', 'text-primary');
+                badge.classList.add('bg-secondary', 'text-white');
+            }
+        }
+    });
+}
+
+function submitCategoryFilter() {
+    // Build form with selected categories
+    const form = document.createElement('form');
+    form.method = 'GET';
+    form.action = '{{ url_for("course_list") }}';
+    
+    // Add search query if exists
+    {% if search_query %}
+    const searchInput = document.createElement('input');
+    searchInput.type = 'hidden';
+    searchInput.name = 'search';
+    searchInput.value = '{{ search_query }}';
+    form.appendChild(searchInput);
+    {% endif %}
+    
+    // Add selected categories
+    document.querySelectorAll('.category-checkbox:checked').forEach(checkbox => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'category';
+        input.value = checkbox.value;
+        form.appendChild(input);
+    });
+    
+    // Submit form
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+
+<style>
+.category-item {
+    transition: all 0.2s ease;
+    padding: 0.75rem 1rem !important;
+    border-left: 3px solid transparent !important;
+}
+
+.category-item:hover:not(.category-selected) {
+    background-color: #e9ecef !important;
+    border-left-color: #667eea !important;
+}
+
+.category-selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border-left-color: #764ba2 !important;
+}
+
+.category-checkbox {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    margin-top: 0.2rem;
+}
+
+.category-checkbox:checked {
+    background-color: white;
+    border-color: white;
+}
+
+.badge-category {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+}
+
+.list-group-item-action:hover {
+    background-color: #f8f9fa !important;
+}
+</style>
+{% endblock %}

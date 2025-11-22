@@ -35,10 +35,29 @@ class CourseForm(FlaskForm):
                        render_kw={"class": "form-control"})
     description = TextAreaField('Description', validators=[DataRequired()], 
                                render_kw={"class": "form-control", "rows": 5})
-    category_id = SelectField('Category', coerce=int, validators=[Optional()], 
-                             render_kw={"class": "form-select"})
+    category_code = SelectField('Category Code', coerce=str, validators=[Optional()], 
+                               choices=[('', 'Select a category (optional)')], 
+                               render_kw={"class": "form-select", "id": "category_code"})
+    category_other = StringField('Other Category Code', validators=[Optional(), Length(max=10)], 
+                                render_kw={"class": "form-control", "placeholder": "Enter course code (e.g., EE, CS)", 
+                                          "style": "text-transform: uppercase", "id": "category_other", "pattern": "[A-Z0-9]{2,10}"})
     thumbnail = FileField('Thumbnail Image', validators=[Optional(), FileAllowed(['jpg', 'png', 'jpeg', 'gif'])], 
                          render_kw={"class": "form-control", "accept": "image/*"})
+    
+    def __init__(self, *args, **kwargs):
+        super(CourseForm, self).__init__(*args, **kwargs)
+        # Always set choices - WTForms requires choices to be set before validation
+        try:
+            from .category_codes import get_category_code_choices
+            self.category_code.choices = get_category_code_choices()
+        except (ImportError, RuntimeError):
+            # Fallback to default if import fails or outside app context
+            if not self.category_code.choices:
+                self.category_code.choices = [('', 'Select a category (optional)')]
+
+class EnrollmentForm(FlaskForm):
+    course_code = StringField('Course Code', validators=[DataRequired(), Length(min=6, max=20)], 
+                             render_kw={"class": "form-control", "placeholder": "Enter 8-character course code", "style": "text-transform: uppercase"})
 
 class LessonForm(FlaskForm):
     title = StringField('Lesson Title', validators=[DataRequired(), Length(max=200)], 

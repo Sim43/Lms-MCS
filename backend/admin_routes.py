@@ -16,7 +16,11 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_admin():
             flash('Access denied. Admin access required.', 'error')
-            return redirect(url_for('home'))
+            # Redirect non-admins based on their role
+            if current_user.is_instructor():
+                return redirect(url_for('instructor_dashboard'))
+            else:
+                return redirect(url_for('student_dashboard'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -136,6 +140,32 @@ def admin_toggle_course(course_id):
         db.session.commit()
         flash('Course unpublished successfully.', 'success')
     elif action == 'delete':
+        # Delete all lessons associated with this course first
+        lessons = Lesson.query.filter_by(course_id=course.id).all()
+        for lesson in lessons:
+            # Delete associated files
+            if lesson.video_file:
+                video_path = os.path.join(app.config['UPLOAD_FOLDER'], lesson.video_file)
+                if os.path.exists(video_path):
+                    os.remove(video_path)
+            if lesson.lesson_file:
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], lesson.lesson_file)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            db.session.delete(lesson)
+        
+        # Delete all enrollments for this course
+        enrollments = Enrollment.query.filter_by(course_id=course.id).all()
+        for enrollment in enrollments:
+            db.session.delete(enrollment)
+        
+        # Delete course thumbnail if exists
+        if course.thumbnail:
+            thumbnail_path = os.path.join(app.config['UPLOAD_FOLDER'], course.thumbnail)
+            if os.path.exists(thumbnail_path):
+                os.remove(thumbnail_path)
+        
+        # Now delete the course
         db.session.delete(course)
         db.session.commit()
         flash('Course deleted successfully.', 'success')
