@@ -9,33 +9,43 @@
         <div class="col-md-8">
             <h1 class="mb-2">
                 <i class="bi bi-book me-2"></i>
-                {% if current_user.is_student() %}
-                    My Enrolled Courses
-                {% elif current_user.is_instructor() %}
-                    My Courses
+                {% if current_user.is_authenticated %}
+                    {% if current_user.is_student() %}
+                        My Enrolled Courses
+                    {% elif current_user.is_instructor() %}
+                        My Courses
+                    {% else %}
+                        All Courses
+                    {% endif %}
                 {% else %}
                     All Courses
                 {% endif %}
             </h1>
             <p class="text-muted mb-0">
-                {% if current_user.is_student() %}
-                    View all courses you're enrolled in. Use "Enroll with Code" to join new courses.
-                {% elif current_user.is_instructor() %}
-                    Manage your courses and share course codes with students for enrollment.
+                {% if current_user.is_authenticated %}
+                    {% if current_user.is_student() %}
+                        View all courses you're enrolled in. Use "Enroll with Code" to join new courses.
+                    {% elif current_user.is_instructor() %}
+                        Manage your courses and share course codes with students for enrollment.
+                    {% else %}
+                        Admin view of all courses
+                    {% endif %}
                 {% else %}
-                    Admin view of all courses
+                    Browse all available courses
                 {% endif %}
             </p>
         </div>
         <div class="col-md-4 text-md-end">
-            {% if current_user.is_student() %}
-                <a href="{{ url_for('enroll_by_code') }}" class="btn btn-success me-2 mb-2">
-                    <i class="bi bi-key me-2"></i>Enroll with Code
-                </a>
-            {% elif current_user.is_instructor() %}
-                <a href="{{ url_for('course_create') }}" class="btn btn-success me-2 mb-2">
-                    <i class="bi bi-plus-circle me-2"></i>Create Course
-                </a>
+            {% if current_user.is_authenticated %}
+                {% if current_user.is_student() %}
+                    <a href="{{ url_for('enroll_by_code') }}" class="btn btn-success me-2 mb-2">
+                        <i class="bi bi-key me-2"></i>Enroll with Code
+                    </a>
+                {% elif current_user.is_instructor() %}
+                    <a href="{{ url_for('course_create') }}" class="btn btn-success me-2 mb-2">
+                        <i class="bi bi-plus-circle me-2"></i>Create Course
+                    </a>
+                {% endif %}
             {% endif %}
             <form method="get" class="d-inline mb-0" id="search-form">
                 <div class="input-group input-group-lg">
@@ -128,25 +138,40 @@
             {% else %}
                 <div class="card">
                     <div class="card-body text-center p-5">
-                        {% if current_user.is_student() %}
-                            <i class="bi bi-key text-muted mb-3" style="font-size: 4rem;"></i>
+                        {% if current_user.is_authenticated %}
+                            {% if current_user.is_student() %}
+                                <i class="bi bi-key text-muted mb-3" style="font-size: 4rem;"></i>
+                                <h4 class="mb-3">No courses found</h4>
+                                <p class="text-muted mb-4">
+                                    {% if search_query %}
+                                        No courses match your search. Try a different search term.
+                                    {% else %}
+                                        You haven't enrolled in any courses yet. Get a course code from your instructor and enroll!
+                                    {% endif %}
+                                </p>
+                                <a href="{{ url_for('enroll_by_code') }}" class="btn btn-success btn-lg">
+                                    <i class="bi bi-key me-2"></i>Enroll with Course Code
+                                </a>
+                            {% else %}
+                                <i class="bi bi-book text-muted mb-3" style="font-size: 4rem;"></i>
+                                <h4 class="mb-3">No courses found</h4>
+                                <p class="text-muted">
+                                    {% if search_query %}Try a different search term.{% else %}No courses available.{% endif %}
+                                </p>
+                            {% endif %}
+                        {% else %}
+                            <i class="bi bi-book text-muted mb-3" style="font-size: 4rem;"></i>
                             <h4 class="mb-3">No courses found</h4>
                             <p class="text-muted mb-4">
                                 {% if search_query %}
                                     No courses match your search. Try a different search term.
                                 {% else %}
-                                    You haven't enrolled in any courses yet. Get a course code from your instructor and enroll!
+                                    Please log in to view your courses.
                                 {% endif %}
                             </p>
-                            <a href="{{ url_for('enroll_by_code') }}" class="btn btn-success btn-lg">
-                                <i class="bi bi-key me-2"></i>Enroll with Course Code
+                            <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Log In
                             </a>
-                        {% else %}
-                            <i class="bi bi-book text-muted mb-3" style="font-size: 4rem;"></i>
-                            <h4 class="mb-3">No courses found</h4>
-                            <p class="text-muted">
-                                {% if search_query %}Try a different search term.{% else %}No courses available.{% endif %}
-                            </p>
                         {% endif %}
                     </div>
                 </div>
